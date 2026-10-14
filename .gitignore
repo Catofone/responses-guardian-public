@@ -1,0 +1,37 @@
+# 本地运行状态、配置备份与临时验证产物
+runtime/
+backups/
+smoke/
+integration-test/
+
+# 编译产物与临时文件
+*.exe
+*.log
+*.pid
+*.bak
+*.tmp
+*.sha256
+SHA256SUMS.txt
+
+# 本地环境与凭据；可提交不含真实凭据的示例文件
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.pem
+*.key
+
+# Windows / macOS 文件管理器缓存
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 个人工作笔记与本地发布产物
+/private-notes/
+/releases/
+/dist/
+/docs/GIT.zh-CN.md
+/docs/GITHUB.zh-CN.md
+/docs/REVIEW-*.zh-CN.md

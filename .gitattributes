@@ -1,0 +1,11 @@
+# 统一提交中的文本换行；PowerShell 脚本检出时使用 Windows 换行。
+* text=auto
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.md text eol=lf
+*.html text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
