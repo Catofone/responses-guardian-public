@@ -182,13 +182,21 @@ function Set-GuardianLiveMode {
     throw 'The preference was saved, but Guardian did not confirm the new mode. Check .\scripts\status.ps1; no restart was attempted.'
 }
 
+function Get-GuardianFileHash {
+    param([string]$Path)
+    $stream = [System.IO.File]::OpenRead($Path)
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    try { return [System.BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '') }
+    finally { $algorithm.Dispose(); $stream.Dispose() }
+}
+
 function Update-GuardianChecksums {
     param([string]$Root)
     $lines = @()
-    foreach ($name in @('responses-guardian.exe', 'responses-guardian.next.exe', 'responses-guardian.previous.exe')) {
+    foreach ($name in @('Guardian.exe', 'responses-guardian.exe', 'responses-guardian.next.exe', 'responses-guardian.previous.exe')) {
         $path = Join-Path $Root $name
         if (Test-Path -LiteralPath $path) {
-            $lines += (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash + '  ' + $name
+            $lines += (Get-GuardianFileHash -Path $path) + '  ' + $name
         }
     }
     Set-Content -LiteralPath (Join-Path $Root 'SHA256SUMS.txt') -Value $lines -Encoding ascii
@@ -203,7 +211,7 @@ function Install-GuardianPendingUpdate {
         throw 'Missing checksum for the staged Guardian update.'
     }
     $expectedHash = (Get-Content -Raw -LiteralPath $hashFile).Trim()
-    if ($expectedHash -notmatch '^[0-9a-fA-F]{64}$' -or (Get-FileHash -LiteralPath $pending -Algorithm SHA256).Hash -ne $expectedHash) {
+    if ($expectedHash -notmatch '^[0-9a-fA-F]{64}$' -or (Get-GuardianFileHash -Path $pending) -ne $expectedHash) {
         throw 'The staged Guardian update checksum does not match.'
     }
     $target = Join-Path $Root 'responses-guardian.exe'

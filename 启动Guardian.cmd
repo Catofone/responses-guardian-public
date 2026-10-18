@@ -1,6 +1,10 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 title Responses Guardian
+if exist "%~dp0Guardian.exe" (
+    start "" "%~dp0Guardian.exe"
+    exit /b 0
+)
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch-guardian.ps1"
 set "guardianLauncherExit=%errorlevel%"
 if "%guardianLauncherExit%"=="0" exit /b 0

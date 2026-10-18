@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const version = "0.4.1"
+const version = "0.4.2"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -39,6 +39,7 @@ func run(args []string) (resultErr error) {
 	maxBody := flag.Int64("max-body-bytes", 64<<20, "maximum buffered Responses request size")
 	manageConfig := flag.Bool("manage-config", false, "keep the selected Codex provider pointed at this proxy")
 	restoreConfig := flag.Bool("restore-config", false, "restore the selected Codex provider to the CCSwitch URL, then exit")
+	checkSettings := flag.Bool("check-settings", false, "validate next-start settings without changing Codex routing, then exit")
 	codexConfig := flag.String("codex-config", defaultCodexConfigPath(), "Codex config.toml path")
 	provider := flag.String("provider", "custom", "Codex model provider section to manage")
 	ccswitchBaseURL := flag.String("ccswitch-base-url", "http://127.0.0.1:15721/v1", "expected CCSwitch base_url in Codex config")
@@ -57,13 +58,16 @@ func run(args []string) (resultErr error) {
 		fmt.Println(version)
 		return nil
 	}
+	if *checkSettings && (*manageConfig || *restoreConfig) {
+		return errors.New("check-settings cannot be combined with manage-config or restore-config")
+	}
 
 	mode, err := parseRecoveryMode(*modeRaw)
 	if err != nil {
 		return err
 	}
 	var instance *InstanceInfo
-	if *manageConfig || *restoreConfig {
+	if *manageConfig || *restoreConfig || *checkSettings {
 		instance, err = readInstance(*instanceFile)
 		if err != nil {
 			return fmt.Errorf("read active settings: %w", err)
@@ -112,6 +116,20 @@ func run(args []string) (resultErr error) {
 	}
 	if !explicit["guardian-base-url"] {
 		*guardianBaseURL = settings.guardianBaseURL()
+	}
+	if *checkSettings {
+		manager := NewConfigManager(*codexConfig, *provider, *ccswitchBaseURL, *guardianBaseURL)
+		if err := manager.SetRetrySettings(settings.RequestRetries, settings.StreamRetries); err != nil {
+			return err
+		}
+		var previous *AppSettings
+		if instance != nil {
+			previous = &instance.Settings
+		}
+		if err := manager.Preflight(previous); err != nil {
+			return fmt.Errorf("settings check: %w", err)
+		}
+		return nil
 	}
 
 	if *restoreConfig {

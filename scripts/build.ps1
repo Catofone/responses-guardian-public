@@ -11,9 +11,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'go vet failed' }
     go build -trimpath -ldflags '-s -w' -o responses-guardian.next.exe ./cmd/responses-guardian
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-    $hash = (Get-FileHash -LiteralPath 'responses-guardian.next.exe' -Algorithm SHA256).Hash
-    Set-Content -LiteralPath 'responses-guardian.next.sha256' -Value $hash -Encoding ascii
     . (Join-Path $PSScriptRoot 'guardian-common.ps1')
+    $hash = Get-GuardianFileHash -Path (Join-Path $root 'responses-guardian.next.exe')
+    Set-Content -LiteralPath 'responses-guardian.next.sha256' -Value $hash -Encoding ascii
     Update-GuardianChecksums -Root $root
     Write-Host 'Built and staged the new binary. Close Codex once before running .\scripts\activate-update.ps1.'
 } finally {

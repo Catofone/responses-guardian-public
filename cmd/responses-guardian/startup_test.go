@@ -212,3 +212,45 @@ func TestRestoreIgnoresUnusablePendingSettings(t *testing.T) {
 		t.Fatal("restore used pending settings rather than the active instance")
 	}
 }
+
+func TestCheckSettingsPreservesFilesAndRouting(t *testing.T) {
+	old, original := startupFixture(t)
+	dir := filepath.Dir(old.CodexConfig)
+	instanceFile := filepath.Join(dir, "instance.json")
+	if err := saveInstance(instanceFile, old); err != nil {
+		t.Fatal(err)
+	}
+	instanceBefore, _ := os.ReadFile(instanceFile)
+	candidate := old
+	candidate.Listen, candidate.Upstream = "127.0.0.1:17724", "http://127.0.0.1:17723"
+	settingsFile := filepath.Join(dir, "candidate.json")
+	if err := saveAppSettings(settingsFile, candidate); err != nil {
+		t.Fatal(err)
+	}
+	settingsBefore, _ := os.ReadFile(settingsFile)
+	pidFile := filepath.Join(dir, "check.pid")
+	if err := run([]string{"--check-settings", "--settings-file", settingsFile, "--instance-file", instanceFile, "--pid-file", pidFile}); err != nil {
+		t.Fatal(err)
+	}
+	configAfter, _ := os.ReadFile(old.CodexConfig)
+	instanceAfter, _ := os.ReadFile(instanceFile)
+	settingsAfter, _ := os.ReadFile(settingsFile)
+	if !bytes.Equal(original, configAfter) || !bytes.Equal(instanceBefore, instanceAfter) || !bytes.Equal(settingsBefore, settingsAfter) {
+		t.Fatal("settings validation changed routing or startup files")
+	}
+	for _, path := range []string{pidFile, old.CodexConfig + ".responses-guardian.bak"} {
+		if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("validation created startup artifact: %s", path)
+		}
+	}
+	candidate.Provider = "missing-provider"
+	if err := saveAppSettings(settingsFile, candidate); err != nil {
+		t.Fatal(err)
+	}
+	if err := run([]string{"--check-settings", "--settings-file", settingsFile, "--instance-file", instanceFile}); err == nil {
+		t.Fatal("invalid provider accepted by offline validation")
+	}
+	if err := run([]string{"--check-settings", "--restore-config"}); err == nil {
+		t.Fatal("validation accepted a config mutation flag")
+	}
+}

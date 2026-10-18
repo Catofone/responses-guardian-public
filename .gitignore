@@ -3,6 +3,12 @@ runtime/
 backups/
 smoke/
 integration-test/
+private/
+private-archive/
+local-assets/
+skins/
+artifacts/
+*.prompt.md
 
 # 编译产物与临时文件
 *.exe
@@ -27,11 +33,3 @@ SHA256SUMS.txt
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# 个人工作笔记与本地发布产物
-/private-notes/
-/releases/
-/dist/
-/docs/GIT.zh-CN.md
-/docs/GITHUB.zh-CN.md
-/docs/REVIEW-*.zh-CN.md
